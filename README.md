@@ -295,3 +295,55 @@ Và login thành công! , chúng ta Solved được Challenge này!!!
 # Lab 11: Blind SQL injection with conditional responses
 
 <img width="1127" height="858" alt="image" src="https://github.com/user-attachments/assets/88ecfd02-f4f7-4219-a9de-a985f2e47e44" />
+
+Từ mô tả của đề bài , chúng ta biết được cái cookie được sử dụng trong Challenge này được xử lý bằng truy vấn SQL , và nếu Cookie có tồn tại hợp lệ thì web sẽ hiển thị một thông báo `Welcome back` 
+
+Vào Challeng thì khi gửi request đầu tiên , ở response nó có gửi về Set-Cookie 
+
+<img width="1496" height="432" alt="image" src="https://github.com/user-attachments/assets/53d7ff1c-1530-49f5-8f69-589687caff2d" />
+
+Nhưng mà trong mỗi lần gửi request tiếp theo lại không có Header Cookie được thêm vào , vậy nên mình tự thêm 2 dòng Cookie kia vào request . 
+
+Có nó mới có thể Injection được 
+
+Theo hint của đề bài thì bạn cứ hiểu rằng , Chỉ cần cái truy vấn trả về dữ liệu thì web nó sẽ hiển thị thông báo `Welcome back!` 
+
+Tương tự như các bài trên , chúng ta cần xác định số cột trước và xác định kiểu dữ liệu được sử dụng trong cột đó 
+```sql
+' union select 'a'--
+```
+
+<img width="1494" height="533" alt="image" src="https://github.com/user-attachments/assets/8992d8b1-aa67-4327-bb47-cf21064c9a17" />
+
+
+Ở đây mình xác định được , câu truy vấn sử dụng duy nhất một cột , và kiểu dữ liệu được sử dụng trong cột là string, bởi vì web nó có hiển thị thông báo `Welcome back!` đó kìa.
+
+Tiếp theo nhiệm vụ của chúng ta là xác định mật khẩu được sử dụng với `username: administrator` là gì? 
+
+Bởi vì trang web nó không hiển thị bất kì dữ liệu trả về nào từ truy vấn , chúng ta chỉ có thể phân biệt được , nếu có dữ liệu trả về thì sẽ có thông báo `Welcome back` còn nếu không có dữ liệu trả về hoặc truy vấn lỗi thì nó sẽ không có thông báo đó
+
+Trước tiên cần xác định độ dài password bằng payload
+```sql
+' or length((select password from users where username = 'administrator')) < 25 --
+```
+<img width="1500" height="437" alt="image" src="https://github.com/user-attachments/assets/61baebd6-5fa8-4bda-83d8-972895eb4688" />
+
+Nó có hiển thị welcome back tức là độ dài password nhỏ hơn 25 , mình tiếp tục đoán bằng payload sau:
+```sql
+' or length((select password from users where username = 'administrator')) = 20 --
+```
+
+<img width="1487" height="481" alt="image" src="https://github.com/user-attachments/assets/3bd9397d-4cbb-4e16-adbe-ac6a9b5f3744" />
+
+Vậy lúc này đã rõ độ dài password là 20 ký tự 
+
+Tiếp theo sử dụng hàm `substring()` để xác định kí tự từng vị trí bằng payload sau:
+```
+' or substring((select password from users where username = 'administrator'),1,1) >  'a'--
+```
+
+Vậy là nó hoàn toàn hoạt động đúng , và bây giờ sử dụng payload
+```sql
+' or substring((select password from users where username = 'administrator'),1,1) =  'a'--
+```
+Add to instruder , rồi add 2 kí tự `a` và `1` , burpforce
