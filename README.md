@@ -230,3 +230,68 @@ Tiếp theo dùng thử một ví dụ của cho kiểu dữ String , ở đây 
 <img width="1488" height="627" alt="image" src="https://github.com/user-attachments/assets/5860d32a-d708-4ff0-9501-06b030c05f89" />
 
 
+# Lab 9: SQL injection UNION attack, retrieving data from other tables
+
+<img width="1139" height="575" alt="image" src="https://github.com/user-attachments/assets/931491d0-9f0e-4941-abf5-3e6347dcd27f" />
+
+
+<img width="1494" height="824" alt="image" src="https://github.com/user-attachments/assets/8092f307-c18a-4f16-b607-118f46a9ec51" />
+
+Chúng ta xác định được số cột được sử dụng trong câu truy vấn là 2 cột
+
+<img width="1493" height="446" alt="image" src="https://github.com/user-attachments/assets/f5d18536-52c6-4675-b806-5ef3de0bccf2" />
+
+Và không cột nào ở trong này sử dụng kiểu dữ liệu số cả
+
+<img width="1489" height="817" alt="image" src="https://github.com/user-attachments/assets/53090737-4b6e-403d-9356-cbe412560a32" />
+
+Chúng ta xác định được kiểu dữ liệu sử dụng trong cả 2 cột là kiểu String 
+
+Cuối cùng , sử dụng truy vấn lấy username và password từ bảng users
+```sql
+' union select password,username from users--
+```
+<img width="1489" height="818" alt="image" src="https://github.com/user-attachments/assets/135ba7d2-c7c5-4b2a-8192-90e6ebdef3fe" />
+
+```
+username:administrator
+password:69gxtydhkh0jzpj682pz
+```
+Sử dụng và đăng nhập thôi!
+
+<img width="1438" height="706" alt="image" src="https://github.com/user-attachments/assets/afdaf133-25b1-4619-b183-13ec6e96d051" />
+
+Chúng ta Solved được Challenge này!
+
+# Lab 10: SQL injection UNION attack, retrieving multiple values in a single column
+
+<img width="1139" height="618" alt="image" src="https://github.com/user-attachments/assets/b2dacc27-79eb-48c7-8b35-b4086b361e14" />
+
+Tương tự chúng ta cần xác định số cột 
+
+<img width="1489" height="816" alt="image" src="https://github.com/user-attachments/assets/503c31ed-4147-4828-bc25-a4c62105a024" />
+
+Và xác định được số cột sử dụng trong câu truy vấn là 2
+
+Và kiểu dữ liệu được sử dụng là trong cột là: Cột 1 là kiểu số , Cột 2 là kiểu String
+
+<img width="1490" height="814" alt="image" src="https://github.com/user-attachments/assets/1ab6caf5-dd6e-4fc9-a219-d65e78e3485a" />
+
+Bởi vì cột 1 nó sẽ chỉ nhận kiểu dữ liệu số , cho nên chúng ta chỉ có thể truyền vào cột 2 là password thôi bởi vì cột 2 nó sẽ nhận kiểu dữ liệu String mà 
+
+```sql
+' union select 1,password from users--
+```
+<img width="1494" height="811" alt="image" src="https://github.com/user-attachments/assets/8fa99578-4430-42d5-ad0a-d0d6d5a0efd7" />
+
+Và chúng ta nhận được 3 password , Lấy thử từng cái một với `username:administrator` là xong 
+
+<img width="906" height="461" alt="image" src="https://github.com/user-attachments/assets/76282cf5-d292-4564-b77f-345073822d64" />
+
+Và login thành công! , chúng ta Solved được Challenge này!!!
+
+<img width="1177" height="653" alt="image" src="https://github.com/user-attachments/assets/e8be33db-da9c-4002-a4cc-b28a19841bbe" />
+
+# Lab 11: Blind SQL injection with conditional responses
+
+<img width="1127" height="858" alt="image" src="https://github.com/user-attachments/assets/88ecfd02-f4f7-4219-a9de-a985f2e47e44" />
