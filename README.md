@@ -195,3 +195,12 @@ Và chúng ta solve được Challenge này!
 
 <img width="1492" height="709" alt="image" src="https://github.com/user-attachments/assets/6dfabc7e-b259-4877-982b-fffd9ea68fc7" />
 
+# Lab 7: SQL injection UNION attack, determining the number of columns returned by the query
+
+<img width="1126" height="631" alt="image" src="https://github.com/user-attachments/assets/489856b5-9d16-4db2-ad58-96b6167e7c72" />
+
+Theo đề bài mô tả , để solved được thì phải sử dụng kĩ thuật `UNION SELECT NULL` để xác định số lượng cột của truy vấn `SELECT` trước đó
+
+
+
+
