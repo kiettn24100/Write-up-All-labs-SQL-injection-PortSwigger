@@ -201,6 +201,32 @@ Và chúng ta solve được Challenge này!
 
 Theo đề bài mô tả , để solved được thì phải sử dụng kĩ thuật `UNION SELECT NULL` để xác định số lượng cột của truy vấn `SELECT` trước đó
 
+Chúng ta nhập vào 
+```sql
+' union select null,null,null--
+```
+<img width="1493" height="844" alt="image" src="https://github.com/user-attachments/assets/3183cadb-a536-4c78-a9e6-1d8f7ffe5c7a" />
 
+Và chúng ta Solve được Challenge này!
+
+# Lab 8: SQL injection UNION attack, finding a column containing text
+
+<img width="1143" height="705" alt="image" src="https://github.com/user-attachments/assets/6b166406-39ae-47b6-9249-010a1d14110b" />
+
+Theo mô tả của challenge này , chúng ta muốn Solve được phải xác định đúng kiểu dữ liệu chuỗi đang được cột nào ở câu Select trước đang sử dụng 
+
+Trước tiên vẫn phải xác định số cột trước đã, bằng kỹ thuật đã học ở Lab 7
+
+<img width="1481" height="819" alt="image" src="https://github.com/user-attachments/assets/48274c10-881c-4ba2-86dd-d1f85fb18c0c" />
+
+Chúng ta truyền vào
+```sql
+' union select null,null,null--
+```
+Và xác định được số cột sử dụng trong câu Select trước là 3 cột
+
+Tiếp theo dùng thử một ví dụ của cho kiểu dữ String , ở đây mình dùng `'a'` rồi thay lần lượt vào từng cột 
+
+<img width="1488" height="627" alt="image" src="https://github.com/user-attachments/assets/5860d32a-d708-4ff0-9501-06b030c05f89" />
 
 
